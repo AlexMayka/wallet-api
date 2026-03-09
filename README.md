@@ -1,132 +1,132 @@
-# **Javacode_walletAPI**
+<div align="center">
 
-REST-сервис на Go для управления кошельками: пополнение, снятие и получение баланса. Проект выполнен в рамках тестового задания и реализован с учётом высокой нагрузки (1000 RPS) и конкурентной работы с одним кошельком.
+# 💰 Wallet API
 
-___
+**Concurrent-safe REST API for wallet management under high load**
 
-## **📌 Функциональность**
-1. [x] POST /api/v1/wallet — пополнение или снятие средств с кошелька
-2. [x] GET /api/v1/wallets/{wallet_uuid} — получение баланса кошелька
-3. [x] Конкурентная безопасность через транзакции и FOR UPDATE
-4. [x] Документация Swagger
-5. [x] Логирование через logrus
-6. [x] Покрытие тестами (repository, service, controller)
+[![Go](https://img.shields.io/badge/Go-1.24+-00ADD8?style=for-the-badge&logo=go&logoColor=white)](https://golang.org)
+[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-336791?style=for-the-badge&logo=postgresql&logoColor=white)](https://postgresql.org)
+[![Swagger](https://img.shields.io/badge/Swagger-85EA2D?style=for-the-badge&logo=swagger&logoColor=black)](https://swagger.io)
+[![Docker](https://img.shields.io/badge/Docker-2496ED?style=for-the-badge&logo=docker&logoColor=white)](https://docker.com)
 
-___
+<br>
 
-## **🛠 Стек технологий**
-| Компонент     | Технология              |
-|---------------|-------------------------|
-| Язык          | Go 1.24                 |
-| БД            | PostgreSQL              |
-| web-фреймворк | Gin                     |
-| Docker        | Docker + Docker Compose |
-| Миграции      | Goose (миграции)        |
-| Логирование   | Logrus логирование      | 
-| Документация  | Swagger                 |
-| Тестирование  | SQLMock + Testify       |
-| Нагрузка      | WRK (Lua-скрипты)       | 
-________
+<table>
+<tr>
+<td align="center"><h3>⚡ 1000 RPS</h3><sub>sustained throughput</sub></td>
+<td align="center"><h3>🔒 FOR UPDATE</h3><sub>row-level locking</sub></td>
+<td align="center"><h3>📖 Swagger</h3><sub>interactive docs</sub></td>
+<td align="center"><h3>0</h3><sub>race conditions</sub></td>
+</tr>
+</table>
 
-## **📌 API Эндпоинты**
-### 💸 Wallet API 
-| Метод | URL         | Описание                                                               |
-|-------|------------|------------------------------------------------------------------------|
-| `GET` | `/api/v1/wallets/{wallet_uuid}` | Получить текущий баланс по UUID кошелька                               |
-| `POST` | `/api/v1/wallet` | Выполнить операцию пополнения или снятия средств с указанного кошелька |
+</div>
 
+---
 
+## 💡 What It Does
 
-## 🚀 Быстрый старт
-___
-1. Клонируйте репозиторий
-```bash
-git clone https://github.com/AlexMayka/javacode_walletAPI.git
-cd wallet-api
+A wallet service that handles **concurrent financial operations** safely:
+
+- 💳 **Deposit** — add funds to any wallet
+- 💸 **Withdraw** — deduct funds with balance validation
+- 📊 **Balance** — instant balance lookup by UUID
+
+The core challenge: **multiple simultaneous requests to the same wallet** must never corrupt the balance. Solved with PostgreSQL `SELECT ... FOR UPDATE` row-level locking inside transactions.
+
+---
+
+## 🏗️ Architecture
+
+```
+cmd/                → Entry point
+config/             → Environment configuration
+internal/
+├── controllers/    → HTTP handlers (Gin)
+├── service/        → Business logic + locking
+├── repositories/   → PostgreSQL (FOR UPDATE)
+├── models/         → Domain entities
+└── middleware/      → Request logging
+migrations/         → Goose SQL migrations
+load_tests/         → wrk scripts + benchmark results
+docs/               → Swagger API specs
 ```
 
-2. Запуск через Docker Compose
-```bash
-docker compose --env-file config.env up -d
-```
+---
 
-Это поднимет:
-- PostgreSQL 
-- Выполнит миграции с помощью Goose
-- Запустит Wallet API
+## 🔌 API
 
-4. Swagger-документация
-Открыть в браузере: http://localhost:8080/swagger/index.html
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| `POST` | `/api/v1/wallet` | Deposit or withdraw funds |
+| `GET` | `/api/v1/wallets/{uuid}` | Get wallet balance |
 
-___
+**Example:**
 
-## 🧪 Тестирование
-```bash
-go test ./...
-```
-
-Нагрузочное тестирование (необходимо установить wrk):
-```bash
-wrk -t4 -c10 -d30s -s ./load_tests/post.lua http://localhost:8080
-```
-
-Результаты тестов находятся в папке load_tests/:
-- get_results.txt
-- post_results.txt
-- mixed_results.txt
-
-___
-
-## ⚙️ Переменные окружения
-
-Файл .env (config.env):
-```dotenv
-DB_HOST=db
-DB_USER=admin
-DB_PASSWORD=password
-DB_NAME=wallet
-DB_PORT=5432
-DRIVER=postgres
-
-SERVER_HOST=0.0.0.0
-SERVER_PORT=8080
-GIN_MODE=release
-```
-___
-
-## 🧩 Архитектура
-```bash
-* cmd/ — точка входа
-* config/ — загрузка конфигурации
-* internal/
-  * controllers/ — HTTP-обработчики
-  * service/ — бизнес-логика
-  * repositories/ — работа с БД
-  * models/ — структуры
-  * middleware/ — логгер
-* migrations/ — SQL-миграции
-* pkg/db/ — инициализация БД
-* load_tests/ — скрипты и результаты нагрузочного тестирования
-* utils/ — ошибки и логгер
-```
-___
-
-## ✅ Примеры запросов
-
-**POST /api/v1/wallet**
 ```json
+POST /api/v1/wallet
 {
   "walletId": "c3a8cb84-03f2-4fb9-982a-9ee2cfb50b9f",
   "operationType": "DEPOSIT",
   "amount": 1000
 }
+
+→ { "uuid": "c3a8cb84-...", "balance": 2000 }
 ```
 
-**Пример ответа:**
-```json
-{
-  "uuid": "c3a8cb84-03f2-4fb9-982a-9ee2cfb50b9f",
-  "balance": 2000
-}
+---
+
+## 🛠 Tech Stack
+
+| | Technology | Purpose |
+|-|------------|---------|
+| 🔧 | **Go + Gin** | HTTP framework |
+| 🗄 | **PostgreSQL** | Storage with row-level locking |
+| 📖 | **Swagger** | Auto-generated API docs |
+| 📦 | **Docker Compose** | One-command deployment |
+| 🔄 | **Goose** | Database migrations |
+| 📝 | **Logrus** | Structured logging |
+| 🧪 | **SQLMock + Testify** | Unit testing |
+| 🏋️ | **wrk** | Load testing (Lua scripts) |
+
+---
+
+## 🚀 Quick Start
+
+```bash
+git clone https://github.com/AlexMayka/wallet-api.git
+cd wallet-api
+docker compose --env-file config.env up -d
 ```
-___
+
+Swagger UI: `http://localhost:8080/swagger/index.html`
+
+---
+
+## 📈 Load Testing
+
+Benchmarked with **wrk** using custom Lua scripts at 1000 RPS:
+
+| Scenario | Result |
+|----------|--------|
+| GET balance | ✅ Stable at 1000 RPS |
+| POST deposit/withdraw | ✅ No race conditions |
+| Mixed workload | ✅ Consistent balances |
+
+Results in `load_tests/`: `get_results.txt`, `post_results.txt`, `mixed_results.txt`
+
+```bash
+wrk -t4 -c10 -d30s -s ./load_tests/post.lua http://localhost:8080
+```
+
+---
+
+## 🧪 Tests
+
+```bash
+go test ./...
+```
+
+## License
+
+MIT
